@@ -1,0 +1,43 @@
+[InputStream]
+flag = false
+path = "D:\\课程\\大创\\HTM\\HTM\\1.txt"
+
+[ScalarEncoder]
+w = 20
+minValue = 70
+maxValue = 100
+bucketNum = 301
+clipInput = true
+
+[SpatialPooler]
+inputDimensions = {/}
+columnDimensions = {512}
+potentialRadius = 3
+potentialPct = 0.5
+globalInhibition = true
+localAreaDensity = -1.0
+numActiveColumnsPerInhArea = 10
+stimulusThreshold = 0
+synPermInactiveDec = 0.008
+synPermActiveInc = 0.05
+synPermConnected = 0.1
+minPctOverlapDutyCycles = 0.001
+dutyCyclePeriod = 1000
+boostStrength = 0.0
+
+[TemporalMemory]
+columnDimensions = {/}
+cellsPerColumn = 32
+activationThreshold = 13
+initialPermanence = 0.21
+connectedPermanence = 0.50
+LearningThreshold = 10
+permanenceIncrement = 0.10
+permanenceDecrement = 0.10
+predictedSegmentDecrement = 0.0
+
+[SDRClassifier]
+steps = {1, 3}
+cellsNum = /
+bucketNum = /
+lr = 0.02
