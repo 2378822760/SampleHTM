@@ -3,6 +3,8 @@
  * 没有偏置节点。
  */
 #pragma once
+#ifndef SDRCLASSIFIER_LIBRARY_H
+#define SDRCLASSIFIER_LIBRARY_H
 #include <vector>
 #include <map>
 #include <deque>
@@ -83,3 +85,5 @@ private:
     UInt bucketNum_;
     Real64 lr_;
 };
+
+#endif //SDRCLASSIFIER_LIBRARY_H

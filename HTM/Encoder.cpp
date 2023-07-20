@@ -27,21 +27,21 @@ ScalarEncoder::ScalarEncoder(const map<string, string>& config) {
 
 void ScalarEncoder::init(int w, double minValue, double maxValue, int bucketNum, 
     bool clipInput) {
-    if (w <= 0) {
+	if (w <= 0) {
         cerr << "w must be > 0" << endl;
-        throw invalid_argument("-1");
-    }
+		throw invalid_argument("-1");
+	}
 
-    if (bucketNum <= 0) {
+	if (bucketNum <= 0) {
         cerr << "bucketNum = " << bucketNum << "must > 0" << endl;
-        throw invalid_argument("-1");
-    }
+		throw invalid_argument("-1");
+	}
 
-    if (minValue >= maxValue) {
+	if (minValue >= maxValue) {
         cerr << "minValue must be < maxValue. minValue=" << minValue
-            << " maxValue=" << maxValue << endl;
-        throw invalid_argument("-1");
-    }
+			<< " maxValue=" << maxValue << endl;
+		throw invalid_argument("-1");
+	}
 
     w_              = w;
     minValue_       = minValue;

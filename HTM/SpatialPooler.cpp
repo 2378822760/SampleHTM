@@ -19,7 +19,7 @@ SpatialPooler::SpatialPooler(vector<UInt> inputDimensions, vector<UInt> columnDi
         stimulusThreshold, synPermInactiveDec, synPermActiveInc, synPermConnected,
         minPctOverlapDutyCycles, dutyCyclePeriod, boostStrength);
 }
-
+    
 SpatialPooler::SpatialPooler(const map<string, string>& config) {
     vector<UInt> inputDimensions    = stov(config.at("inputDimensions"));
     vector<UInt> columnDimensions   = stov(config.at("columnDimensions"));
@@ -95,7 +95,7 @@ void SpatialPooler::init(vector<UInt> inputDimensions, vector<UInt> columnDimens
     for (auto& field : potentialPools_) {
         assignSynapses_(field);
     }
-
+    
     // 4.3 compute inhibitionRadius
     updateInhibitionRadius_();
 
@@ -393,3 +393,5 @@ void SpatialPooler::increasePermanences_(UInt columnIndex, Real incFactor) {
         syn.permanence += synPermConnected_ * incFactor;
     }
 }
+
+

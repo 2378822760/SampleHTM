@@ -24,14 +24,15 @@ typedef  map<string, map<string, string>> config;
  */
 template<typename T, typename iterationType>
 void getArrayRange(iterationType beg, iterationType end, T& min, T& max) {
-    min = max = *beg;
-    size_t arraySize = 0;
-    for (iterationType it = beg; it != end; it++) {
-        arraySize++;
-        T tmp = *it;
-        min = min > tmp ? tmp : min;
-        max = max < tmp ? tmp : max;
-    }
+	min = max = *beg;
+	size_t arraySize = 0;
+	for (iterationType it = beg; it != end; it++) {
+		arraySize++;
+		T tmp = *it;
+		min = min > tmp ? tmp : min;
+		max = max < tmp ? tmp : max;
+	}
+	max += (max - min) / (arraySize - 1);
 }
 
 
@@ -43,12 +44,12 @@ void getArrayRange(iterationType beg, iterationType end, T& min, T& max) {
  */
 template<typename iterationType>
 void printCodedDate(iterationType beg, iterationType end, UInt n) {
-    UInt cnt = 0;
-    for (iterationType it = beg; it != end; it++) {
-        cout << *it << ' ';
-        cnt++;
+	UInt cnt = 0;
+	for (iterationType it = beg; it != end; it++) {
+		cout << *it << ' ';
+		cnt++;
         if (cnt % n == 0) cout << endl;
-    }
+	}
 }
 
 

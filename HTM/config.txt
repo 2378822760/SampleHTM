@@ -1,6 +1,6 @@
 [InputStream]
 flag = false
-path = "D:\\课程\\大创\\HTM\\HTM\\1.txt"
+path = "D:\\�γ�\\��\\HTM\\HTM\\1.txt"
 
 [ScalarEncoder]
 w = 20

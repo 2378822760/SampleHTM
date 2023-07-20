@@ -32,9 +32,10 @@ public:
      */
     ScalarEncoder(int w, double minValue, double maxValue, int bucketNum, bool clipInput);
 
+
     /**
      * @brief 通过配置文件构造标量编码器
-    */
+     */
     ScalarEncoder(const map<string, string>& config);
 
     ~ScalarEncoder() = default;
@@ -65,7 +66,7 @@ public:
         return bucketNum_;
     }
 
-    /** 
+    /**
      * @return 最近编码的一个数据对应的bucket索引
      */
     UInt lastBucketIdx() const {

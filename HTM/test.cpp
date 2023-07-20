@@ -34,21 +34,21 @@ void printFinalResult(ClassifierResult& result, const vector<Real64>& data, \
 }
 
 void testParameter() {
-    // encoder
-    UInt W = 20;
-    Real64 MIN_VAL, MAX_VAL;
+// encoder
+UInt W = 20;
+Real64 MIN_VAL, MAX_VAL;
     Real64 BUCKET_SIZE = 0.2;
-    bool CLIP_INPUT = true;
+bool CLIP_INPUT = true;
 
-    // sp
+// sp
     vector<UInt> COLUMN_DEMENSIONS = { 512 };
-    UInt ENCODE_SIZE;
-    // tm
-    UInt NUM_COLUMNS;
+UInt ENCODE_SIZE;
+// tm
+UInt NUM_COLUMNS;
 
-    // sdrclassifier
-    vector<UInt> STEPS = { 1, 2, 3 };
-    Real64 LR = 0.02;
+// sdrclassifier
+vector<UInt> STEPS = { 1, 2, 3 };
+Real64 LR = 0.02;
 
     vector<Real64> dataStream = getDataVector("1.txt");
     getArrayRange(dataStream.begin(), dataStream.end(), MIN_VAL, MAX_VAL);
@@ -83,6 +83,15 @@ void testParameter() {
         printFinalResult(result, dataStream, i, &encoder);
         cout << "=====================================================" << endl;
     }
+    if (inputData.eof())
+        cout << "End of file reached.\n";
+    else if (inputData.fail())
+        cout << "Input terminated by data mismatch.\n";
+    else
+        cout << "Input terminated for unknown reason.\n";
+    cout << "Data size : " << dataStream.size() << endl;
+    inputData.close();
+    return dataStream;
 }
 
 int test() {
