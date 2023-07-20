@@ -34,32 +34,37 @@ void printFinalResult(ClassifierResult& result, const vector<Real64>& data, \
 }
 
 void testParameter() {
-// encoder
-UInt W = 20;
-Real64 MIN_VAL, MAX_VAL;
+    // encoder
+    UInt W = 20;
+    Real64 MIN_VAL, MAX_VAL;
     Real64 BUCKET_SIZE = 0.2;
-bool CLIP_INPUT = true;
+    bool CLIP_INPUT = true;
 
-// sp
-    vector<UInt> COLUMN_DEMENSIONS = { 512 };
-UInt ENCODE_SIZE;
-// tm
-UInt NUM_COLUMNS;
+    // sp
+        vector<UInt> COLUMN_DEMENSIONS = { 512 };
+    UInt ENCODE_SIZE;
+    // tm
+    UInt NUM_COLUMNS;
 
-// sdrclassifier
-vector<UInt> STEPS = { 1, 2, 3 };
-Real64 LR = 0.02;
+    // sdrclassifier
+    vector<UInt> STEPS = { 1, 2, 3 };
+    Real64 LR = 0.02;
 
     vector<Real64> dataStream = getDataVector("1.txt");
     getArrayRange(dataStream.begin(), dataStream.end(), MIN_VAL, MAX_VAL);
+
     ScalarEncoder encoder = ScalarEncoder(W, MIN_VAL, MAX_VAL, \
         (MAX_VAL - MIN_VAL) / BUCKET_SIZE, CLIP_INPUT);
     ENCODE_SIZE = encoder.getOutputWidth();
+
     SpatialPooler sp({ ENCODE_SIZE }, COLUMN_DEMENSIONS);
     NUM_COLUMNS = sp.numberOfColumns();
+
     TemporalMemory tm({ NUM_COLUMNS });
+
     SDRClassifier sdrclassifier(STEPS, tm.numberOfCells(), \
         encoder.bucketNum(), LR);
+
     UInt* inputVector = (UInt*)calloc(ENCODE_SIZE, sizeof(UInt));
     UInt* columnVector = (UInt*)calloc(NUM_COLUMNS, sizeof(UInt));
 
@@ -83,15 +88,6 @@ Real64 LR = 0.02;
         printFinalResult(result, dataStream, i, &encoder);
         cout << "=====================================================" << endl;
     }
-    if (inputData.eof())
-        cout << "End of file reached.\n";
-    else if (inputData.fail())
-        cout << "Input terminated by data mismatch.\n";
-    else
-        cout << "Input terminated for unknown reason.\n";
-    cout << "Data size : " << dataStream.size() << endl;
-    inputData.close();
-    return dataStream;
 }
 
 int test() {
@@ -196,4 +192,5 @@ void testConfig() {
 int main() {
     testConfig();
     // testParameter();
+    // test();
 }

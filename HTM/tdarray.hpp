@@ -74,6 +74,3 @@ private:
     UInt row_;
     UInt col_;
 };
-
-
-#endif //SDRCLASSFIER_TDARRAY_HPP

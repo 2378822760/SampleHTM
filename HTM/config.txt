@@ -1,6 +1,6 @@
 [InputStream]
-flag = false
-path = "D:\\�γ�\\��\\HTM\\HTM\\1.txt"
+flag = true
+path = 1.txt
 
 [ScalarEncoder]
 w = 20

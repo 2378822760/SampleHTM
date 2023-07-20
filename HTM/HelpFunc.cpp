@@ -1,11 +1,6 @@
 #include "HelpFunc.hpp"
 
 // #define DEBUG
-
-
-
-
-
 config readConfig(const string& path) {
     ifstream config_file(path);
     config config_data;

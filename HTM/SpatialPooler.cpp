@@ -393,5 +393,3 @@ void SpatialPooler::increasePermanences_(UInt columnIndex, Real incFactor) {
         syn.permanence += synPermConnected_ * incFactor;
     }
 }
-
-

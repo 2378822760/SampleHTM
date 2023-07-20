@@ -5,8 +5,8 @@
 using namespace std;
 
 ScalarEncoder::ScalarEncoder(int w, double minValue, double maxValue, int bucketNum, 
-    bool clipInput){
-    init(w, minValue, maxValue, bucketNum, clipInput);
+    bool clipInput) : init(w, minValue, maxValue, bucketNum, clipInput) {
+    
 }
 
 ScalarEncoder::ScalarEncoder(const map<string, string>& config) {

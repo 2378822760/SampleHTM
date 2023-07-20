@@ -100,7 +100,7 @@ public:
     */
     vector<CellIndex> compute(size_t activeColumnsSize, const UInt *activeColumns,
         bool learn = true);
-
+    
     UInt numberOfCells();
 
 private:
