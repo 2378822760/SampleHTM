@@ -1,12 +1,9 @@
 #ifndef TYPE_HPP
 #define TYPE_HPP
-
-#endif // TYPE_HPP
-
 /* SpatialPooler Using */
 typedef unsigned int UInt;
 typedef float Real;
-
+typedef int Int;
 /* TemporalMemory Using */
 typedef UInt ColumnIndex;
 typedef UInt CellIndex;
@@ -15,3 +12,5 @@ typedef float Permanence;
 
 /* SRDClassifier Using */
 typedef double Real64;
+
+#endif // TYPE_HPP

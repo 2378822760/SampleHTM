@@ -94,7 +94,6 @@ void TemporalMemory::initialize(const vector<UInt>& columnDimensions, UInt cells
         auto end = beg + cellsPerColumn_;
         fill(beg, end, i);
     }
-
 }
 
 vector<CellIndex> TemporalMemory::compute(std::size_t activeColumnsSize, const UInt* activeColumns, bool learn) {
@@ -141,7 +140,7 @@ void TemporalMemory::activatePredictedColumn(Column& column) {
         winnerCells[segment.cell] = true; // t时刻
         if (LEARNING_ENABLED) {
             for (Synapse& synapse : segment.synapses) {
-                if (cells[synapse.presynapticCell] == 1) // 直到该操作前cells表不应被更新 @time t-1时刻
+                if (cells[synapse.presynapticCell] == true) // 直到该操作前cells表不应被更新 @time t-1时刻
                     synapse.permanence += PERMANENCE_INCREMENT;
                 else
                     synapse.permanence -= PERMANENCE_DECREMENT;

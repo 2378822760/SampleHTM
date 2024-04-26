@@ -23,8 +23,8 @@ config readConfig(const string& path) {
             // 解析键值对
             size_t equals_pos = line.find('=');
             if (equals_pos != string::npos) {
-                std::string key = line.substr(0, equals_pos);
-                std::string value = line.substr(equals_pos + 1);
+                string key = line.substr(0, equals_pos);
+                string value = line.substr(equals_pos + 1);
 
                 // 去除首尾空格
                 key.erase(0, key.find_first_not_of(" \t"));
@@ -105,3 +105,4 @@ vector<UInt> stov(const string& str) {
     }
     return result;
 }
+

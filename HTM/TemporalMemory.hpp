@@ -50,7 +50,7 @@ private:
     vector<bool> cells;             // t-1时刻，每当一次计算后由activeCells更新
     vector<bool> winnerCells;       // t时刻
     vector<bool> activeCells;       // t时刻
-    vector<UInt> cellsNumSegments;  // 全局共享，无需区分时刻
+    vector<UInt> cellsNumSegments;  // 每个cell上segment的数量。全局共享，无需区分时刻
 
     vector<Segment> segments;
     vector<SegIndex> activeSegments;   // t时刻

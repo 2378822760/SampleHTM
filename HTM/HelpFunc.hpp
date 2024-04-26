@@ -3,9 +3,10 @@
  */
 #pragma once
 #include "type.hpp"
+#include "Encoder.hpp"
+#include "SDRClassifier.hpp"
 #include <iostream>
 #include <string>
-#include <iostream>
 #include <fstream>
 #include <sstream>
 #include <map>

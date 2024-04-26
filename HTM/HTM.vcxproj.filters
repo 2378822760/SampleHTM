@@ -27,13 +27,22 @@
     <ClCompile Include="TemporalMemory.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="HelpFunc.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
     <ClCompile Include="SDRClassifier.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="tdarray.cpp">
+    <ClCompile Include="SDRClassifier.hpp">
+      <Filter>头文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Astral.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="HelpFunc.cpp">
+    <ClCompile Include="Topology.hpp">
+      <Filter>头文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Topology.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
@@ -44,7 +53,7 @@
     <ClInclude Include="SpatialPooler.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="type.hpp">
+    <ClInclude Include="Type.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="TemporalMemory.hpp">
@@ -53,10 +62,7 @@
     <ClInclude Include="HelpFunc.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="SDRClassifier.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="tdarray.hpp">
+    <ClInclude Include="Astral.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

@@ -37,7 +37,7 @@ permanenceDecrement = 0.10
 predictedSegmentDecrement = 0.0
 
 [SDRClassifier]
-steps = {1, 3}
+steps = {1}
 cellsNum = /
 bucketNum = /
 lr = 0.02

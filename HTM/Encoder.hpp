@@ -13,11 +13,11 @@
 #include <string>
 
 using namespace std;
- /** @brief
-  * 将不同类型的输入数据编码成HTM适用的稀疏分布表征（SDR）。
-  * 编码器负责确定哪些输出比特应该是 1，哪些应该是 0，从而捕获数据的重要语义特征。
-  * 相似的输入信息应该产生彼此高度重叠的 SDR。
-  */
+/** @brief
+ * 将不同类型的输入数据编码成HTM适用的稀疏分布表征（SDR）。
+ * 编码器负责确定哪些输出比特应该是 1，哪些应该是 0，从而捕获数据的重要语义特征。
+ * 相似的输入信息应该产生彼此高度重叠的 SDR。
+ */
 class ScalarEncoder {
 public:
     ScalarEncoder() = default;
@@ -47,7 +47,7 @@ public:
      * @param input 需要编码的标量
      * @param output 需要提前分配好足够的空间（n_）
      */
-    void encodeIntoArray(double input, UInt output[]);
+    vector<UInt> encodeIntoArray(double input);
 
     double decode(UInt bucketIdx);
 
@@ -55,23 +55,19 @@ public:
      * @brief 获取输出数据长度
      * @return 每编码一个数据需要的bit数量
      */
-    UInt getOutputWidth() const {
-        return n_;
-    }
+    UInt getOutputWidth() const { return n_; }
 
     /**
      * @return 返回当前的bucket数量
      */
-    UInt bucketNum() const {
-        return bucketNum_;
-    }
+    UInt bucketNum() const { return bucketNum_; }
 
     /**
      * @return 最近编码的一个数据对应的bucket索引
      */
-    UInt lastBucketIdx() const {
-        return lastBucketIdx_;
-    }
+    UInt lastBucketIdx() const { return lastBucketIdx_; }
+
+    void printParameters() const;
 private:
     int w_;
     double minValue_;
