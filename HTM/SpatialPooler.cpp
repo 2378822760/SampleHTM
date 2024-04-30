@@ -16,7 +16,7 @@ std::uniform_real_distribution<> dis(0.0, 1.0); // 生成0到1之间的均匀分
 SpatialPooler::SpatialPooler(vector<UInt> inputDimensions, vector<UInt> columnDimensions,
     UInt potentialRadius, Real potentialPct,
     bool globalInhibition, Real localAreaDensity,
-    UInt numActiveColumnsPerInhArea,
+    Int numActiveColumnsPerInhArea,
     UInt stimulusThreshold, Real synPermInactiveDec,
     Real synPermActiveInc, Real synPermConnected,
     Real minPctOverlapDutyCycles,
@@ -32,7 +32,7 @@ SpatialPooler::SpatialPooler(const map<string, string>& config) {
     vector<UInt> columnDimensions = stov(config.at("columnDimensions"));
     UInt potentialRadius = stoul(config.at("potentialRadius"));
     UInt dutyCyclePeriod = stoul(config.at("dutyCyclePeriod"));
-    UInt numActiveColumnsPerInhArea = stoul(config.at("numActiveColumnsPerInhArea"));
+    Int numActiveColumnsPerInhArea = stoi(config.at("numActiveColumnsPerInhArea"));
     UInt stimulusThreshold = stoul(config.at("stimulusThreshold"));
     Real potentialPct = stof(config.at("potentialPct"));
     Real localAreaDensity = stof(config.at("localAreaDensity"));
@@ -51,7 +51,7 @@ SpatialPooler::SpatialPooler(const map<string, string>& config) {
 void SpatialPooler::init(vector<UInt> inputDimensions, vector<UInt> columnDimensions,
     UInt potentialRadius, Real potentialPct,
     bool globalInhibition, Real localAreaDensity,
-    UInt numActiveColumnsPerInhArea,
+    Int numActiveColumnsPerInhArea,
     UInt stimulusThreshold, Real synPermInactiveDec,
     Real synPermActiveInc, Real synPermConnected,
     Real minPctOverlapDutyCycles,
@@ -89,7 +89,7 @@ void SpatialPooler::init(vector<UInt> inputDimensions, vector<UInt> columnDimens
     boostStrength_ = boostStrength;
     minPctOverlapDutyCycles_ = minPctOverlapDutyCycles;
     iterationNum_ = 0;
-    updatePeriod_ = 50;
+    updatePeriod_ = 10;
     initConnectedPct_ = 0.5;
     // 3. 为一些数组分配空间
     overlap_.assign(numColumns_, 0);
@@ -248,7 +248,6 @@ void SpatialPooler::mapIndex_(const UInt sourceSize, const UInt targetSize,
     }
 }
 
-
 void SpatialPooler::assignSynapses_(vector<UInt>& receptiveField) {
 #ifdef DEBUG
     cout << "assignSynapses_" << endl;
@@ -284,7 +283,7 @@ void SpatialPooler::updateInhibitionRadius_() {
     Real radius = (diameter - 1) / 2.0;
     radius = max((Real)1.0, radius);
     inhibitionRadius_ = UInt(round(radius));
-    cout << "numConnectedSyn : " << numConnectedSyn << endl;
+    // cout << "numConnectedSyn : " << numConnectedSyn << endl;
 }
 
 void SpatialPooler::calculateOverlap_(const vector<UInt>& inputVector) {
@@ -320,29 +319,113 @@ vector<UInt> SpatialPooler::inhibitColumns_() {
 #ifdef DEBUG
     cout << "inhibitColumns_" << endl;
 #endif // DEBUG
-    int numActive = localAreaDensity_ > 0 ? (inhibitionRadius_ * 2 + 1)
-        * localAreaDensity_ : numActiveColumnsPerInhArea_;
-    activeColumns_.clear();
+    Real density = localAreaDensity_;
+    if (numActiveColumnsPerInhArea_ > 0) {
+        UInt inhibitionArea =
+            pow((Real)(2 * inhibitionRadius_ + 1), (Real)columnDimensions_.size());
+        inhibitionArea = min(inhibitionArea, numColumns_);
+        density = ((Real)numActiveColumnsPerInhArea_) / inhibitionArea;
+        density = min(density, (Real)0.5);
+    }
+    if (globalInhibition_ ||
+        inhibitionRadius_ >
+        *max_element(columnDimensions_.begin(), columnDimensions_.end())) {
+        inhibitColumnsGlobal_(boostedOverlaps_, density);
+    }
+    else {
+        inhibitColumnsLocal_(boostedOverlaps_, density);
+    }
+    // cout << "density : " << density << "  |  inhibitionRadius_" << inhibitionRadius_
+    // << "  |  activeColumns size : " << activeColumns_.size() << endl;
+    for (auto i : activeColumns_) cout << i << ' ';
+    cout << endl;
+    cout << "activeColumns size : " << activeColumns_.size() << endl;
     vector<UInt> activeVector(numColumns_);
-    Real globalNumActive = kthScore(0, numActive);
-    bool isGlobalInhibition = (globalInhibition_ == true) || (inhibitionRadius_ >
-        *max_element(columnDimensions_.begin(), columnDimensions_.end()));
+    for (auto i : activeColumns_) activeVector[i] = 1;
+    return activeVector;
+}
 
-    int activeVectorCnt = 0;
-    for (int i = 0; i < numColumns_ && activeVectorCnt < numActive; ++i) {
-        Real minLocalActivity =
-            isGlobalInhibition == true ? globalNumActive : kthScore(i, numActive);
-        if (boostedOverlaps_[i] > stimulusThreshold_) {
-            // overlapCount_[i]++;
-            if (boostedOverlaps_[i] >= minLocalActivity) {
-                activeColumns_.push_back(i);
-                // activeCount_[i]++;
-                activeVector[i] = 1;
-                activeVectorCnt++;
+bool SpatialPooler::isWinner_(Real score, vector<pair<UInt, Real>>& winners, UInt numWinners)
+{
+    if (score < stimulusThreshold_) {
+        return false;
+    }
+
+    if (winners.size() < numWinners) {
+        return true;
+}
+
+    if (score >= winners[numWinners - 1].second) {
+        return true;
+    }
+
+    return false;
+}
+
+void SpatialPooler::addToWinners_(UInt index, Real score, vector<pair<UInt, Real>>& winners)
+{
+    pair<UInt, Real> val = make_pair(index, score);
+    for (auto it = winners.begin(); it != winners.end(); it++) {
+        if (score >= it->second) {
+            winners.insert(it, val);
+            return;
+        }
+    }
+    winners.push_back(val);
+}
+
+void SpatialPooler::inhibitColumnsGlobal_(const vector<Real>& overlaps, Real density)
+{
+    activeColumns_.clear();
+    const UInt numDesired = (UInt)(density * numColumns_);
+    assert(numDesired > 0);
+    vector<pair<UInt, Real>> winners;
+    for (UInt i = 0; i < numColumns_; i++) {
+        if (isWinner_(overlaps[i], winners, numDesired)) {
+            addToWinners_(i, overlaps[i], winners);
+        }
+    }
+
+    const UInt numActual = min(numDesired, (UInt)winners.size());
+    for (UInt i = 0; i < numActual; i++) {
+        activeColumns_.push_back(winners[i].first);
+    }
+}
+
+void SpatialPooler::inhibitColumnsLocal_(const vector<Real>& overlaps, Real density)
+{
+    activeColumns_.clear();
+
+    // Tie-breaking: when overlaps are equal, columns that have already been
+    // selected are treated as "bigger".
+    vector<bool> activeColumnsDense(numColumns_, false);
+
+    for (UInt column = 0; column < numColumns_; column++) {
+        if (overlaps[column] >= stimulusThreshold_) {
+            UInt numNeighbors = 0;
+            UInt numBigger = 0;
+            int numRange = neighbours_[column].size() / 2;
+            for (int i = 0; i < numRange; ++i) {
+                for (int neighbor = neighbours_[column][i * 2]; neighbor < neighbours_[column][i * 2 + 1]; ++neighbor) {
+                    if (neighbor != column) {
+                        numNeighbors++;
+
+                        const Real difference = overlaps[neighbor] - overlaps[column];
+                        if (difference > 0 ||
+                            (difference == 0 && activeColumnsDense[neighbor])) {
+                            numBigger++;
+                        }
+                    }
+                }
+            }
+
+            UInt numActive = (UInt)(0.5 + (density * (numNeighbors + 1)));
+            if (numBigger < numActive) {
+                activeColumns_.push_back(column);
+                activeColumnsDense[column] = true;
             }
         }
     }
-    return activeVector;
 }
 
 Real SpatialPooler::kthScore(UInt colIndex, UInt K) {
@@ -356,7 +439,7 @@ Real SpatialPooler::kthScore(UInt colIndex, UInt K) {
             neighboursOverlap.push_back(boostedOverlaps_[j]);
         }
     }
-    sort(neighboursOverlap.begin(), neighboursOverlap.end());
+    sort(neighboursOverlap.rbegin(), neighboursOverlap.rend());
     return neighboursOverlap[K - 1];
 }
 
@@ -386,9 +469,9 @@ void SpatialPooler::updateDutyCycles_(const vector<UInt>& activeVector) {
         dutyCyclePeriod_ > iterationNum_ ? iterationNum_ : dutyCyclePeriod_;
     for (int i = 0; i < numColumns_; ++i) {
         activeDutyCycle_[i] =
-            (activeDutyCycle_[i] * (period - 1) + (overlap_[i] > 0 ? 1 : 0)) / period;
+            (activeDutyCycle_[i] * (period - 1) + (overlap_[i] > 0 ? 1.0 : 0.0)) / (Real)period;
         overlapDutyCycle_[i] =
-            (overlapDutyCycle_[i] * (period - 1) + (activeVector[i] > 0 ? 1 : 0)) / period;
+            (overlapDutyCycle_[i] * (period - 1) + (activeVector[i] > 0 ? 1.0 : 0.0)) / (Real)period;
     }
 }
 
@@ -435,18 +518,18 @@ void SpatialPooler::updateMinDutyCycles_() {
         return;
     }
     // 非全局抑制更新MinDutyCycles，效率很低
-    for (int i = 0; i < numColumns_; ++i) {
+    for (int column = 0; column < numColumns_; ++column) {
         vector<Real> neighbourOverlapDutyCycles;
         neighbourOverlapDutyCycles.reserve(2 * inhibitionRadius_ + 1);
-        int numRange = neighbours_[i].size() / 2;
+        int numRange = neighbours_[column].size() / 2;
         for (int i = 0; i < numRange; ++i) {
-            for (int j = neighbours_[i][i * 2]; j < neighbours_[i][i * 2 + 1]; ++j) {
+            for (int j = neighbours_[column][i * 2]; j < neighbours_[column][i * 2 + 1]; ++j) {
                 neighbourOverlapDutyCycles.push_back(overlapDutyCycle_[j]);
             }
         }
         Real maxOverlapDutyCycles =
             *max_element(neighbourOverlapDutyCycles.begin(), neighbourOverlapDutyCycles.end());
-        minOverlapDutyCycles_[i] = minPctOverlapDutyCycles_ * maxOverlapDutyCycles;
+        minOverlapDutyCycles_[column] = minPctOverlapDutyCycles_ * maxOverlapDutyCycles;
     }
 }
 

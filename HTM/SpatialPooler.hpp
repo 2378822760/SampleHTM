@@ -59,7 +59,7 @@ public:
     SpatialPooler(vector<UInt> inputDimensions, vector<UInt> columnDimensions,
         UInt potentialRadius = 3, Real potentialPct = 0.5,
         bool globalInhibition = true, Real localAreaDensity = -1.0,
-        UInt numActiveColumnsPerInhArea = 10,
+        Int numActiveColumnsPerInhArea = 10,
         UInt stimulusThreshold = 0, Real synPermInactiveDec = 0.008,
         Real synPermActiveInc = 0.05, Real synPermConnected = 0.1,
         Real minPctOverlapDutyCycles = 0.001,
@@ -76,7 +76,7 @@ public:
     void init(vector<UInt> inputDimensions, vector<UInt> columnDimensions,
         UInt potentialRadius = 3, Real potentialPct = 0.5,
         bool globalInhibition = true, Real localAreaDensity = -1.0,
-        UInt numActiveColumnsPerInhArea = 10,
+        Int numActiveColumnsPerInhArea = 10,
         UInt stimulusThreshold = 0, Real synPermInactiveDec = 0.008,
         Real synPermActiveInc = 0.05, Real synPermConnected = 0.1,
         Real minPctOverlapDutyCycles = 0.001,
@@ -161,6 +161,13 @@ private:
      */
     vector<UInt> inhibitColumns_();
 
+    bool isWinner_(Real score, vector<pair<UInt, Real>>& winners, UInt numWinners);
+
+    void addToWinners_(UInt index, Real score, vector<pair<UInt, Real>>& winners);
+
+    void inhibitColumnsGlobal_(const vector<Real>& overlaps, Real density);
+
+    void inhibitColumnsLocal_(const vector<Real>& overlaps, Real density);
     /**
      * @brief 返回第columnIndex个column邻居中第k大的overlap值，作为激活时的依据。
      */

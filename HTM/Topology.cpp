@@ -32,36 +32,36 @@ using namespace topology;
 
 namespace topology {
 
-    vector<UInt> coordinatesFromIndex(UInt index, const vector<UInt>& dimensions) {
-        vector<UInt> coordinates(dimensions.size(), 0);
+vector<UInt> coordinatesFromIndex(UInt index, const vector<UInt>& dimensions) {
+    vector<UInt> coordinates(dimensions.size(), 0);
 
-        UInt shifted = index;
-        for (size_t i = dimensions.size() - 1; i > 0; i--) {
-            coordinates[i] = shifted % dimensions[i];
-            shifted = shifted / dimensions[i];
-        }
-
-        assert(shifted < dimensions[0]);
-        coordinates[0] = shifted;
-
-        return coordinates;
+    UInt shifted = index;
+    for (size_t i = dimensions.size() - 1; i > 0; i--) {
+        coordinates[i] = shifted % dimensions[i];
+        shifted = shifted / dimensions[i];
     }
 
-    UInt indexFromCoordinates(const vector<UInt>& coordinates,
-        const vector<UInt>& dimensions) {
-        assert(coordinates.size() == dimensions.size());
+    assert(shifted < dimensions[0]);
+    coordinates[0] = shifted;
 
-        UInt index = 0;
-        for (size_t i = 0; i < dimensions.size(); i++) {
-            assert(coordinates[i] < dimensions[i]);
-            index *= dimensions[i];
-            index += coordinates[i];
-        }
+    return coordinates;
+}
 
-        return index;
+UInt indexFromCoordinates(const vector<UInt>& coordinates,
+    const vector<UInt>& dimensions) {
+    assert(coordinates.size() == dimensions.size());
+
+    UInt index = 0;
+    for (size_t i = 0; i < dimensions.size(); i++) {
+        assert(coordinates[i] < dimensions[i]);
+        index *= dimensions[i];
+        index += coordinates[i];
     }
 
-} // end namespace topology
+    return index;
+}
+
+
 
 // ============================================================================
 // NEIGHBORHOOD
@@ -224,4 +224,4 @@ WrappingNeighborhood::Iterator WrappingNeighborhood::end() const {
     return { *this, /*end*/ true };
 }
 
-
+} // end namespace topology

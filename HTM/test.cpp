@@ -182,12 +182,12 @@ void testSpatialPooler() {
 
     vector<UInt> inputDimensions { encoder.getOutputWidth() }; vector<UInt> columnDimensions { 50 };
     UInt potentialRadius = 3; Real potentialPct = 0.5;
-    bool globalInhibition = false; Real localAreaDensity = -1.0;
-    UInt numActiveColumnsPerInhArea = 10;
+    bool globalInhibition = false; Real localAreaDensity = 0.3;
+    Int numActiveColumnsPerInhArea = -1;
     UInt stimulusThreshold = 0; Real synPermInactiveDec = 0.008;
-    Real synPermActiveInc = 0.05; Real synPermConnected = 0.1;
+    Real synPermActiveInc = 0.05; Real synPermConnected = 0.2;
     Real minPctOverlapDutyCycles = 0.001;
-    UInt dutyCyclePeriod = 1000; Real boostStrength = 0.0;
+    UInt dutyCyclePeriod = 1000; Real boostStrength = 0.1;
     SpatialPooler sp(inputDimensions, columnDimensions, potentialRadius, potentialPct,
         globalInhibition, localAreaDensity, numActiveColumnsPerInhArea,
         stimulusThreshold, synPermInactiveDec, synPermActiveInc, synPermConnected,
@@ -195,12 +195,81 @@ void testSpatialPooler() {
     sp.printParameters();
     for (auto data : datastream) {
         auto res = encoder.encodeIntoArray(data);
-        for (auto bit : res) cout << bit << ' ';
-        cout << endl;
+        // for (auto bit : res) cout << bit << ' ';
+        // cout << endl;
         auto spres = sp.compute(res, true);
-        for (auto bit : spres) cout << bit << ' ';
-        cout << endl;
+        // for (auto bit : spres) cout << bit << ' ';
+        // cout << '\n' << endl;
     }
+    sp.printParameters();
+    cout << '\n';
+    for (auto data : datastream) {
+        auto res = encoder.encodeIntoArray(data);
+        // for (auto bit : res) cout << bit << ' ';
+        // cout << endl;
+        auto spres = sp.compute(res, true);
+        // for (auto bit : spres) cout << bit << ' ';
+        // cout << '\n' << endl;
+    }
+    sp.printParameters();
+
+    cout << '\n';
+    for (auto data : datastream) {
+        auto res = encoder.encodeIntoArray(data);
+        // for (auto bit : res) cout << bit << ' ';
+        // cout << endl;
+        auto spres = sp.compute(res, true);
+        // for (auto bit : spres) cout << bit << ' ';
+        // cout << '\n' << endl;
+    }
+    sp.printParameters();
+
+    cout << '\n';
+    for (auto data : datastream) {
+        auto res = encoder.encodeIntoArray(data);
+        // for (auto bit : res) cout << bit << ' ';
+        // cout << endl;
+        auto spres = sp.compute(res, true);
+        // for (auto bit : spres) cout << bit << ' ';
+        // cout << '\n' << endl;
+    }
+    sp.printParameters();
+
+    cout << '\n';
+    for (auto data : datastream) {
+        auto res = encoder.encodeIntoArray(data);
+        // for (auto bit : res) cout << bit << ' ';
+        // cout << endl;
+        auto spres = sp.compute(res, true);
+        // for (auto bit : spres) cout << bit << ' ';
+        // cout << '\n' << endl;
+    }
+    sp.printParameters();
+
+    cout << '\n';
+    for (auto data : datastream) {
+        auto res = encoder.encodeIntoArray(data);
+        // for (auto bit : res) cout << bit << ' ';
+        // cout << endl;
+        auto spres = sp.compute(res, true);
+        // for (auto bit : spres) cout << bit << ' ';
+        // cout << '\n' << endl;
+    }
+    sp.printParameters();
+
+    cout << '\n';
+    for (auto data : datastream) {
+        auto res = encoder.encodeIntoArray(data);
+        // for (auto bit : res) cout << bit << ' ';
+        // cout << endl;
+        auto spres = sp.compute(res, true);
+        // for (auto bit : spres) cout << bit << ' ';
+        // cout << '\n' << endl;
+    }
+    sp.printParameters();
+
+    cout << '\n';
+
 }
 //void testConfig() {
 //    config config_ = readConfig("config.txt");
@@ -243,11 +312,12 @@ void testSpatialPooler() {
 //    }
 //}
 
-int main() {
+int main(int argc, char* argv[]) {
     //testConfig();
     // testParameter();
     // test();
     // testEncoder();
     testSpatialPooler();
+
     return 0;
 }
