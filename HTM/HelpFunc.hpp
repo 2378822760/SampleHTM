@@ -13,9 +13,6 @@
 #include <vector>
 
 using namespace std;
-
-typedef  map<string, map<string, string>> config;
-
 /**
  * @brief 返回arr的上下界，上界保存在max，下界保存在min
  * @param beg 需要获得最大最小值的开始迭代器

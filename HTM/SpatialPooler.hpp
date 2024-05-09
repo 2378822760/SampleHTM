@@ -2,6 +2,7 @@
 #include <vector>
 #include <map>
 #include "type.hpp"
+#include "Topology.hpp"
 /**
  * @brief 新皮质中的突触的数据结构,一个突触连接一个column和输入中的一个bit。
  * 包含了永久值permanence和连接的输入空间索引

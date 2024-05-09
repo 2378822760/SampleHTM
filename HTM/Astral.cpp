@@ -3,54 +3,32 @@
 namespace Astral {
     Softmax softmax;
     ReLU relu;
+    LinearActivation linearActivation(1.0);
     MSELoss mseLoss;
     CrossEntropyLoss crossEntropyLoss;
     SGD sgd(0.01);
-    Layer::Layer(int unitsNum, ActivationBase* activation, LayerType type) :
-        unitsNum_(unitsNum), activation_(activation), type_(type) { }
 
-    void Astral::Layer::log()
+    Sequential::~Sequential()
     {
-        std::cout << "******** z ********" << std::endl;
-        std::cout << this->z_ << std::endl;
-        std::cout << "******** y ********" << std::endl;
-        std::cout << this->y_ << std::endl;
-        std::cout << "******** w ********" << std::endl;
-        std::cout << this->w_ << std::endl;
-        std::cout << "******** b ********" << std::endl;
-        std::cout << this->b_ << std::endl;
+        this->optimizer_ = nullptr;
+        this->lossfunc_ = nullptr;
+        for (auto& layer : layers_) {
+            delete layer;
+            layer = nullptr;
+        }
     }
 
-    void Astral::SelfAttention::compile()
-    {
-        this->Wq_ = Eigen::MatrixXd::Random(this->embedSize_, this->embedSize_);
-        this->Wk_ = Eigen::MatrixXd::Random(this->embedSize_, this->embedSize_);
-        this->Wv_ = Eigen::MatrixXd::Random(this->embedSize_, this->embedSize_);
-    }
+    void Sequential::add(LayerBase* layer) {
 
-    Eigen::MatrixXd Astral::SelfAttention::forward(const Eigen::MatrixXd inputs)
-    {
-        Eigen::MatrixXd A; // embedSize_ * d
-        if (inputs.cols() == this->embedSize_) A = inputs.transpose();
-        else if (inputs.rows() == this->embedSize_) A = inputs;
-        else throw std::runtime_error("Inputs' size does not match the config.");
-        this->Q_ = this->Wq_ * A; // embedSize_ * d
-        this->K_ = this->Wk_ * A;
-        this->V_ = this->Wv_ * A;
-        this->Alpha_ = this->Q_.transpose() * this->K_; // d * d
-        this->Alpha2_ = Astral::softmax.f(this->Alpha_); // d * d
-        return Alpha2_ * this->V_.transpose();
-    }
-
-    void Sequential::add(int unitsNum, ActivationBase* activation, LayerType type) {
-        if (unitsNum < 0) throw std::invalid_argument("units must greater than 0");
-        layers_.emplace_back(unitsNum, activation, type);
+        layers_.push_back(layer);
     }
 
     void Sequential::pop()
     {
-        if (!layers_.empty())
+        if (!layers_.empty()) {
+            delete layers_.back();
             layers_.pop_back();
+        }
     }
 
     void Sequential::compile(OptimizerBase* optimizer, LossBase* loss)
@@ -59,27 +37,21 @@ namespace Astral {
         if (!loss) throw std::runtime_error("loss can not be nullptr!");
         this->lossfunc_ = loss;
         this->optimizer_ = optimizer;
-        for (int i = 0; i < layers_.size(); ++i) {
-            // 输入层没有偏置节点，权重矩阵依附在前一层，即输出层没有权重矩阵
-            if (i != layers_.size() - 1)
-                layers_[i].w_ = Eigen::MatrixXd::Random(layers_[i].unitsNum_, layers_[i + 1].unitsNum_);
-            if (i != 0)
-                layers_[i].b_ = Eigen::RowVectorXd::Random(layers_[i].unitsNum_);
-        }
+        for (auto& layer : this->layers_) layer->compile();
     }
 
-    void Astral::Sequential::fit(const Eigen::MatrixXd& x_train,
-        const Eigen::MatrixXd& y_train, int batchSize, int epochs)
+    void Sequential::fit(const MatrixXType& x_train,
+        const MatrixXType& y_train, int batchSize, int epochs)
     {
         if (batchSize < 0) throw std::invalid_argument("batchSize must greater than 0");
         if (epochs < 0) throw std::invalid_argument("epochs must greater than 0");
         for (int iteration = 1; iteration <= epochs; ++iteration) {
             int remainRows = x_train.rows(), curRow = 0, xcols = x_train.cols(), ycols = y_train.cols();
             while (remainRows > 0) {
-                forwardPropagation(x_train.block(curRow, 0, std::min(remainRows, batchSize), xcols));
-                double loss = calculateLoss(layers_.back().y_,
-                    y_train.block(curRow, 0, std::min(remainRows, batchSize), ycols), lossfunc_);
-                backPropagation(y_train.block(curRow, 0, std::min(remainRows, batchSize), ycols));
+                int blockRows = std::min(remainRows, batchSize);
+                MatrixXType res = forwardPropagation(x_train.block(curRow, 0, blockRows, xcols));
+                STDType loss = calculateLoss(res, y_train.block(curRow, 0, blockRows, ycols), lossfunc_);
+                backPropagation(res, y_train.block(curRow, 0, blockRows, ycols));
                 std::cout << "iteration : " << iteration << ", loss = " << loss << std::endl;
                 remainRows -= batchSize, curRow += batchSize;
                 // log();
@@ -87,70 +59,171 @@ namespace Astral {
         }
     }
 
-    void Astral::Sequential::forwardPropagation(const Eigen::MatrixXd& input)
+    MatrixXType Sequential::forwardPropagation(const MatrixXType& input)
     {
-        layers_[0].y_ = input;
-        for (int i = 1; i < layers_.size(); ++i) {
-            const auto& lastLayer = layers_[i - 1];
-            auto& layer = layers_[i];
-            layer.z_ = lastLayer.y_ * lastLayer.w_;
-            Eigen::RowVectorXd b = layer.b_;
-            layer.z_ = layer.z_.rowwise() + b; // Eigen广播机制
-            // std::cout << layer.z_ << std::endl;
-            layer.y_ = layer.activation_->f(layer.z_, 0);
-            // std::cout << layer.y_ << std::endl;
+        if (this->layers_.empty()) std::cout << "Warning: this network is empty." << std::endl;
+        const MatrixXType* lastLayerOutput = new MatrixXType(input);
+        for (auto& layer : layers_) {
+            lastLayerOutput = layer->forward(*lastLayerOutput);
         }
+        return *lastLayerOutput; // copy
     }
 
-    double Astral::Sequential::calculateLoss(const Eigen::MatrixXd& input, const Eigen::MatrixXd& target, LossBase* loss)
+    STDType Sequential::calculateLoss(const MatrixXType& input, const MatrixXType& target, LossBase* loss)
     {
         return loss->f(input, target);
     }
 
-    void Astral::Sequential::backPropagation(const Eigen::MatrixXd& target)
+    void Sequential::backPropagation(const MatrixXType& forwardOutput, const MatrixXType& target)
     {
-        auto dLdy = this->lossfunc_->df(layers_.back().y_, target);
-        int layersNum = layers_.size();
-        for (int layerIndex = layersNum - 1; layerIndex > 0; --layerIndex) {
-            auto& foreLayer = layers_[layerIndex - 1];
-            auto& curLayer = layers_[layerIndex];
-            // curLayer.activation_->df(curLayer.z_);
-            Eigen::MatrixXd dLdz = curLayer.activation_->dLdz(curLayer.z_, dLdy); // batchsize * curLayer.unitsNum
-            // std::cout << dLdz << std::endl;
-            Eigen::MatrixXd wgrads = foreLayer.y_.transpose() * dLdz;
-            // std::cout << grads << std::endl;
-            dLdy = dLdz * foreLayer.w_.transpose(); // (w * dLdz^T)^T = dLdz * w^T
-            // std::cout << dLdy << std::endl;
-            Eigen::MatrixXd bgrads = dLdz.colwise().sum();
-            // std::cout << "layer " << layerIndex << " weights' grads\n" << wgrads << std::endl;
-            // std::cout << "layer " << layerIndex + 1 << " bias' grads\n" << bgrads << std::endl;
-            optimizer_->update(curLayer.b_, bgrads); // target.rows() == batchsize
-            optimizer_->update(foreLayer.w_, wgrads);
+        auto dLdy = this->lossfunc_->df(forwardOutput, target);
+        for (auto layer = this->layers_.rbegin(); layer != this->layers_.rend(); ++layer) {
+            dLdy = (*layer)->backward(dLdy, this->optimizer_);
         }
     }
 
-    double Astral::Sequential::evaluate(const Eigen::MatrixXd& x_train, const Eigen::MatrixXd& y_train)
+    STDType Sequential::evaluate(const MatrixXType& x_train, const MatrixXType& y_train)
     {
-        forwardPropagation(x_train);
-        double loss = calculateLoss(layers_.back().y_, y_train, lossfunc_);
+        auto res = forwardPropagation(x_train);
+        STDType loss = calculateLoss(res, y_train, lossfunc_);
         return loss;
     }
 
-    Eigen::MatrixXd Astral::Sequential::predict(const Eigen::MatrixXd& x)
+    MatrixXType Sequential::predict(const MatrixXType& x)
     {
-        forwardPropagation(x);
-        return layers_.back().y_;
+        return forwardPropagation(x);
     }
 
-    void Astral::Sequential::log()
+    void Sequential::log()
     {
         int cnt = 1;
         for (auto& layer : layers_) {
             std::cout << "Layer " << cnt++ << " info : " << std::endl;
-            layer.log();
-            std::cout << std::endl;
+            std::cout << layer << std::endl;
         }
     }
-    
 
+    std::ostream& operator<<(std::ostream& os, const Linear& linear)
+    {
+        os << "******** z ********" << '\n';
+        os << linear.z_ << '\n';
+        os << "******** y ********" << '\n';
+        os << linear.y_ << '\n';
+        os << "******** w ********" << '\n';
+        os << linear.w_ << '\n';
+        os << "******** b ********" << '\n';
+        os << linear.b_ << '\n';
+        return os;
+    }
+
+    Linear::Linear(int inFeatures, int outFeatures, ActivationBase* activation, bool bias)
+        : bias_(bias), activation_(activation)
+    {
+        assert(inFeatures > 0);
+        assert(outFeatures > 0);
+        this->x_ = nullptr;
+        this->inFeatures_ = inFeatures;
+        this->outFeatures_ = outFeatures;
+    }
+
+    Linear::~Linear()
+    {
+        this->x_ = nullptr;
+        this->activation_ = nullptr;
+    }
+
+    void Linear::compile()
+    {
+        this->w_ = MatrixXType::Random(this->inFeatures_, this->outFeatures_);
+        if (bias_) this->b_ = MatrixXType::Random(1, this->outFeatures_);
+    }
+
+    MatrixXType* Linear::forward(const MatrixXType& x)
+    {
+        this->x_ = &x;
+        this->z_ = x * this->w_;
+        if (this->bias_) {
+            RowVectorXType b = this->b_;
+            this->z_ = this->z_.rowwise() + b; // Eigen广播机制
+        }
+        // std::cout << layer.z_ << std::endl;
+        this->y_ = this->activation_->f(this->z_, 0);
+        return &this->y_;
+    }
+
+    MatrixXType Linear::backward(const MatrixXType& dLdy, OptimizerBase* optimizer)
+    {
+        MatrixXType dLdz = this->activation_->dLdz(this->z_, dLdy); // batchsize * curLayer.unitsNum
+        MatrixXType wgrads = (*this->x_).transpose() * dLdz;
+        this->x_ = nullptr;
+        optimizer->update(this->w_, wgrads);
+        if (this->bias_) {
+            MatrixXType bgrads = dLdz.colwise().sum();
+            optimizer->update(this->b_, bgrads); // target.rows() == batchsize
+        }
+        return dLdz * this->w_.transpose(); // dLdy = (w * dLdz^T)^T = dLdz * w^T
+    }
+
+    SelfAttention::SelfAttention(int numVector, int embedSize, int heads)
+    {
+        assert(numVector > 0);
+        assert(embedSize > 0);
+        assert(heads > 0);
+        this->numVector_ = numVector;
+        this->embedSize_ = numVector;
+        this->heads_ = heads;
+    }
+
+    SelfAttention::~SelfAttention()
+    {
+    }
+
+    void SelfAttention::compile()
+    {
+        this->Wq_ = MatrixXType::Random(this->embedSize_, this->embedSize_);
+        this->Wk_ = MatrixXType::Random(this->embedSize_, this->embedSize_);
+        this->Wv_ = MatrixXType::Random(this->embedSize_, this->embedSize_);
+    }
+    MatrixXType* SelfAttention::forward(const MatrixXType& x)
+    {
+        this->In_ = x;
+        this->Q_ = In_ * this->Wq_; // numVector * embedSize
+        this->K_ = In_ * this->Wk_;
+        this->V_ = In_ * this->Wv_;
+        this->Alpha_ = this->Q_ * this->K_.transpose(); // d * d
+        this->Alpha2_ = Astral::softmax.f(this->Alpha_); // d * d 
+        this->Out_ = this->Alpha2_ * this->V_;
+        return &this->Out_;
+    }
+
+    MatrixXType SelfAttention::backward(const MatrixXType& dLdO, OptimizerBase* optimizer)
+    {
+        auto dLdV = this->Alpha2_.transpose() * dLdO;
+        auto dLdWv = this->In_.transpose() * dLdV;
+        auto dLdA2 = dLdO * this->V_.transpose();
+        auto dLdA = Astral::softmax.dLdz(this->Alpha_, dLdA2);
+        auto dLdKT = this->Q_.transpose() * dLdA;
+        auto dLdK = dLdKT.transpose();
+        auto dLdQ = dLdA * this->K_;
+        auto dLdWk = this->In_.transpose() * dLdK;
+        auto dLdWq = this->In_.transpose() * dLdQ;
+        auto dLdIn = dLdQ * this->Wq_.transpose() + dLdK * this->Wk_.transpose() + dLdV * this->Wv_.transpose();
+#ifdef DEBUG
+        std::cout << "--         grad debug         --\n";
+        std::cout << dLdV << '\n';
+        std::cout << dLdWv << '\n';
+        std::cout << dLdA2 << '\n';
+        std::cout << dLdA << '\n';
+        std::cout << dLdK << '\n';
+        std::cout << dLdQ << '\n';
+        std::cout << dLdWk << '\n';
+        std::cout << dLdWq << '\n';
+        std::cout << dLdIn << '\n';
+
+#endif // DEBUG
+        optimizer->update(this->Wq_, dLdWq);
+        optimizer->update(this->Wk_, dLdWk);
+        optimizer->update(this->Wv_, dLdWv);
+        return dLdIn;
+    }
 }

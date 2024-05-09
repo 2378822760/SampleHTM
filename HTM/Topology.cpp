@@ -28,7 +28,6 @@
 #include <cassert>
 
 using namespace std;
-using namespace topology;
 
 namespace topology {
 

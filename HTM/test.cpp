@@ -203,73 +203,6 @@ void testSpatialPooler() {
     }
     sp.printParameters();
     cout << '\n';
-    for (auto data : datastream) {
-        auto res = encoder.encodeIntoArray(data);
-        // for (auto bit : res) cout << bit << ' ';
-        // cout << endl;
-        auto spres = sp.compute(res, true);
-        // for (auto bit : spres) cout << bit << ' ';
-        // cout << '\n' << endl;
-    }
-    sp.printParameters();
-
-    cout << '\n';
-    for (auto data : datastream) {
-        auto res = encoder.encodeIntoArray(data);
-        // for (auto bit : res) cout << bit << ' ';
-        // cout << endl;
-        auto spres = sp.compute(res, true);
-        // for (auto bit : spres) cout << bit << ' ';
-        // cout << '\n' << endl;
-    }
-    sp.printParameters();
-
-    cout << '\n';
-    for (auto data : datastream) {
-        auto res = encoder.encodeIntoArray(data);
-        // for (auto bit : res) cout << bit << ' ';
-        // cout << endl;
-        auto spres = sp.compute(res, true);
-        // for (auto bit : spres) cout << bit << ' ';
-        // cout << '\n' << endl;
-    }
-    sp.printParameters();
-
-    cout << '\n';
-    for (auto data : datastream) {
-        auto res = encoder.encodeIntoArray(data);
-        // for (auto bit : res) cout << bit << ' ';
-        // cout << endl;
-        auto spres = sp.compute(res, true);
-        // for (auto bit : spres) cout << bit << ' ';
-        // cout << '\n' << endl;
-    }
-    sp.printParameters();
-
-    cout << '\n';
-    for (auto data : datastream) {
-        auto res = encoder.encodeIntoArray(data);
-        // for (auto bit : res) cout << bit << ' ';
-        // cout << endl;
-        auto spres = sp.compute(res, true);
-        // for (auto bit : spres) cout << bit << ' ';
-        // cout << '\n' << endl;
-    }
-    sp.printParameters();
-
-    cout << '\n';
-    for (auto data : datastream) {
-        auto res = encoder.encodeIntoArray(data);
-        // for (auto bit : res) cout << bit << ' ';
-        // cout << endl;
-        auto spres = sp.compute(res, true);
-        // for (auto bit : spres) cout << bit << ' ';
-        // cout << '\n' << endl;
-    }
-    sp.printParameters();
-
-    cout << '\n';
-
 }
 //void testConfig() {
 //    config config_ = readConfig("config.txt");
@@ -318,6 +251,9 @@ int main(int argc, char* argv[]) {
     // test();
     // testEncoder();
     testSpatialPooler();
-
+    Eigen::MatrixXd a = Eigen::MatrixXd::Random(3, 3);
+    cout << a << endl;
+    Eigen::MatrixXd aa = std::move(a.block(0, 0, 3, 3));
+    Eigen::MatrixXd b = Eigen::RowVectorXd::Random(3);
     return 0;
 }

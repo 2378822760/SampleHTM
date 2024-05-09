@@ -2,66 +2,95 @@
 
 #include <iostream>
 #include <vector>
+#include <memory>
 
 #include <Eigen/Core>
 #include <Eigen/Dense>
+// #define DOUBLE_TYPE
+// #define FLOAT_TYPE
+
+#ifdef FLOAT_TYPE
+typedef Eigen::MatrixXf MatrixXType;
+typedef Eigen::VectorXf VectorXType;
+typedef Eigen::RowVectorXf RowVectorXType;
+typedef float STDType;
+#endif // FLOAT_TYPE
+
+#ifndef FLOAT_TYPE
+typedef Eigen::MatrixXd MatrixXType;
+typedef Eigen::VectorXd VectorXType;
+typedef Eigen::RowVectorXd RowVectorXType;
+typedef double STDType;
+#endif
+
 
 namespace Astral {
     class ActivationBase {
     public:
-        virtual Eigen::MatrixXd f(const Eigen::MatrixXd& units, double a = 1) = 0;
-        virtual Eigen::MatrixXd df(const Eigen::MatrixXd& units, double a = 1) = 0;
-        virtual Eigen::MatrixXd dLdz(const Eigen::MatrixXd& z, const Eigen::MatrixXd& dLdy) = 0;
+        virtual MatrixXType f(const MatrixXType& units, STDType a = 1) = 0;
+        virtual MatrixXType df(const MatrixXType& units, STDType a = 1) = 0;
+        virtual MatrixXType dLdz(const MatrixXType& z, const MatrixXType& dLdy) = 0;
     };
 
     class LossBase {
     public:
-        virtual double f(const Eigen::MatrixXd& input, const Eigen::MatrixXd& target) = 0;
-        virtual Eigen::MatrixXd df(const Eigen::MatrixXd& input, const Eigen::MatrixXd& target) = 0;
+        virtual STDType f(const MatrixXType& input, const MatrixXType& target) = 0;
+        virtual MatrixXType df(const MatrixXType& input, const MatrixXType& target) = 0;
     };
 
     class OptimizerBase {
     public:
-        virtual void update(Eigen::MatrixXd& params, const Eigen::MatrixXd& grads) = 0;
+        virtual void update(MatrixXType& params, const MatrixXType& grads) = 0;
+    };
+
+    class LayerBase {
+    public:
+        virtual void compile() = 0;
+
+        virtual MatrixXType* forward(const MatrixXType& x) = 0;
+
+        virtual MatrixXType backward(const MatrixXType& dLdy, OptimizerBase*) = 0;
+
+        virtual ~LayerBase() { };
     };
 
     class Sigmoid : public ActivationBase {
     public:
-        Eigen::MatrixXd f(const Eigen::MatrixXd& units, double a = 1) override {
-            return units.unaryExpr([](double elem) {
+        MatrixXType f(const MatrixXType& x, STDType a = 1) override {
+            return x.unaryExpr([](STDType elem) -> STDType {
                 return 1 / (1 + std::exp(-elem));
                 });
         }
 
-        Eigen::MatrixXd df(const Eigen::MatrixXd& units, double a = 1) override {
-            return units.unaryExpr([](double elem) {
-                return std::exp(-elem) / std::pow(1.0 + std::exp(-elem), 2);
+        MatrixXType df(const MatrixXType& x, STDType a = 1) override {
+            return x.unaryExpr([](STDType elem) -> STDType {
+                return std::exp(-elem) / std::pow(std::exp(-elem) + 1.0, 2);
                 });
         }
 
-        Eigen::MatrixXd dLdz(const Eigen::MatrixXd& z, const Eigen::MatrixXd& dLdy) {
-            Eigen::MatrixXd dydz = df(z);
+        MatrixXType dLdz(const MatrixXType& z, const MatrixXType& dLdy) {
+            MatrixXType dydz = df(z);
             return dydz.array() * dLdy.array();
         }
     };
 
     class Softmax : public ActivationBase {
     public:
-        Eigen::MatrixXd f(const Eigen::MatrixXd& units, double a = 1) override {
-            auto res = units.array().exp();
-            Eigen::VectorXd sumExp = res.rowwise().sum();
+        MatrixXType f(const MatrixXType& x, STDType a = 1) override {
+            auto res = x.array().exp();
+            VectorXType sumExp = res.rowwise().sum();
             return res.array().colwise() / sumExp.array();
         }
 
-        Eigen::MatrixXd df(const Eigen::MatrixXd& units, double a = 1) override {
-            Eigen::MatrixXd Jacobi = -units.transpose() * units;
+        MatrixXType df(const MatrixXType& units, STDType a = 1) override {
+            MatrixXType Jacobi = -units.transpose() * units;
             for (int i = 0; i < units.cols(); ++i) Jacobi(i, i) += units(0, i); // Ö÷¶Ô½ÇÏß + pi
             return Jacobi;
         }
 
-        Eigen::MatrixXd dLdz(const Eigen::MatrixXd& z, const Eigen::MatrixXd& dLdy) {
-            Eigen::MatrixXd y = f(z);
-            Eigen::MatrixXd res(y.rows(), y.cols());
+        MatrixXType dLdz(const MatrixXType& z, const MatrixXType& dLdy) {
+            MatrixXType y = f(z);
+            MatrixXType res(y.rows(), y.cols());
             // std::cout << dLdy << std::endl;
             auto batchsize = y.rows();
             for (Eigen::Index i = 0; i < batchsize; ++i) {
@@ -71,112 +100,134 @@ namespace Astral {
         }
     };
 
-
     class ReLU : public ActivationBase {
     public:
-        Eigen::MatrixXd f(const Eigen::MatrixXd& units, double a = 1) override {
+        MatrixXType f(const MatrixXType& units, STDType a = 1) override {
             return units.array().max(0.0);
         }
-        Eigen::MatrixXd df(const Eigen::MatrixXd& units, double a = 1) override {
-            return (units.array() >= 0.0).cast<double>();
+        MatrixXType df(const MatrixXType& units, STDType a = 1) override {
+            return (units.array() >= 0.0).cast<STDType>();
         }
-        Eigen::MatrixXd dLdz(const Eigen::MatrixXd& z, const Eigen::MatrixXd& dLdy) override {
-            Eigen::MatrixXd y = f(z);
-            Eigen::MatrixXd dydz = df(y);
+        MatrixXType dLdz(const MatrixXType& z, const MatrixXType& dLdy) override {
+            MatrixXType y = f(z);
+            MatrixXType dydz = df(y);
             return dydz.array() * dLdy.array();
         }
     };
 
+    class LinearActivation : public ActivationBase {
+    public:
+        LinearActivation(STDType alpha) : alpha_(alpha) {};
+
+        MatrixXType f(const MatrixXType& units, STDType a = 1) override {
+            return alpha_ * units;
+        }
+        MatrixXType df(const MatrixXType& units, STDType a = 1) override {
+            return MatrixXType::Constant(units.rows(), units.cols(), alpha_);
+        }
+        MatrixXType dLdz(const MatrixXType& z, const MatrixXType& dLdy) override {
+            return dLdy;
+        }
+
+        STDType alpha_;
+    };
 
     class MSELoss : public LossBase {
     public:
-        double f(const Eigen::MatrixXd& input, const Eigen::MatrixXd& target) {
+        STDType f(const MatrixXType& input, const MatrixXType& target) {
             auto res = (target - input).array().square();
             return res.sum() / res.size();
         }
 
-        Eigen::MatrixXd df(const Eigen::MatrixXd& input, const Eigen::MatrixXd& target) {
+        MatrixXType df(const MatrixXType& input, const MatrixXType& target) {
             return (target - input) * 2.0 / target.size();
         }
     };
 
-
     class CrossEntropyLoss : public LossBase {
     public:
-        double f(const Eigen::MatrixXd& input, const Eigen::MatrixXd& target) {
+        STDType f(const MatrixXType& input, const MatrixXType& target) {
             auto res = input.array().log() * target.array();
             return -res.sum() / input.rows();
         }
 
-        Eigen::MatrixXd df(const Eigen::MatrixXd& input, const Eigen::MatrixXd& target) {
+        MatrixXType df(const MatrixXType& input, const MatrixXType& target) {
             return -target.array() * input.array().inverse() / input.rows();
         }
     };
 
-
     class SGD : public OptimizerBase {
     public:
-        double lr_;
+        STDType lr_;
 
-        SGD(double lr) : lr_(lr) {};
+        SGD(STDType lr) : lr_(lr) {};
 
-        void setLr(double lr) { this->lr_ = lr; };
+        void setLr(STDType lr) { this->lr_ = lr; };
 
-        void update(Eigen::MatrixXd& params, const Eigen::MatrixXd& grads) override {
+        void update(MatrixXType& params, const MatrixXType& grads) override {
             params -= lr_ * grads;
         }
     };
 
-
-    enum LayerType {
-        Input,
-        Hidden,
-        Output
-    };
-
-    class Layer {
+    class Linear : public LayerBase {
     public:
-        Layer(int unitsNum, ActivationBase* activation, LayerType type);
+        Linear(int inFeatures, int outFeatures, ActivationBase* activation, bool bias = true);
 
-        Layer(const Layer&) = default;
+        Linear(const Linear&) = default;
 
-        Layer(Layer&&) = default;
+        Linear(Linear&&) = default;
 
-        Layer& operator=(const Layer&) = default;
+        ~Linear() override;
 
-        Layer& operator=(Layer&&) = default;
+        Linear& operator=(const Linear&) = default;
 
-        Eigen::MatrixXd y_;
+        Linear& operator=(Linear&&) = default;
 
-        Eigen::MatrixXd z_;
+        void compile() override;
 
-        Eigen::MatrixXd w_;
+        MatrixXType* forward(const MatrixXType& x) override;
 
-        Eigen::MatrixXd b_;
+        MatrixXType backward(const MatrixXType& dLdy, OptimizerBase*) override;
 
-        void log();
+        const MatrixXType* x_;
 
-        int unitsNum_;
+        MatrixXType y_;
+
+        MatrixXType z_;
+
+        MatrixXType w_;
+
+        MatrixXType b_;
+
+        friend std::ostream& operator<<(std::ostream& os, const Linear& linear);
+
+        int inFeatures_, outFeatures_;
+
+        bool bias_;
 
         ActivationBase* activation_;
 
-        LayerType type_;
     }; // Layer
 
-    class SelfAttention {
-        SelfAttention(int embedSize, int heads);
+    class SelfAttention : public LayerBase {
+    public:
+        SelfAttention(int numVector, int embedSize, int heads);
 
-        void compile();
+        ~SelfAttention() override;
 
-        Eigen::MatrixXd forward(const Eigen::MatrixXd inputs);
+        void compile() override;
 
-        void backward();
+        MatrixXType* forward(const MatrixXType& x) override;
 
-        int embedSize_, heads;
+        MatrixXType backward(const MatrixXType& dLdy, OptimizerBase*) override;
 
-        Eigen::MatrixXd Wq_, Wk_, Wv_;
+        int numVector_, embedSize_, heads_;
 
-        Eigen::MatrixXd Q_, K_, V_, Alpha_, Alpha2_;
+        MatrixXType Wq_, Wk_, Wv_;
+
+        MatrixXType Q_, K_, V_, Alpha_, Alpha2_;
+
+        MatrixXType In_, Out_;
     };
 
     class Sequential {
@@ -187,35 +238,37 @@ namespace Astral {
 
         Sequential(Sequential&&) = default;
 
+        ~Sequential();
+
         Sequential& operator=(const Sequential&) = default;
 
         Sequential& operator=(Sequential&&) = default;
 
-        void add(int unitsNum, ActivationBase* activation, LayerType type = LayerType::Hidden);
+        void add(LayerBase* layer);
 
         void pop();
 
         void compile(OptimizerBase* optimizer, LossBase* lossfunc);
 
-        void fit(const Eigen::MatrixXd& x_train, const Eigen::MatrixXd& y_train, int batchSize, int epochs);
+        void fit(const MatrixXType& x_train, const MatrixXType& y_train, int batchSize, int epochs);
 
-        double evaluate(const Eigen::MatrixXd& x_train, const Eigen::MatrixXd& y_train);
+        STDType evaluate(const MatrixXType& x_train, const MatrixXType& y_train);
 
-        Eigen::MatrixXd predict(const Eigen::MatrixXd& x);
+        MatrixXType predict(const MatrixXType& x);
 
-        void forwardPropagation(const Eigen::MatrixXd& input);
+        MatrixXType forwardPropagation(const MatrixXType& input);
 
-        double calculateLoss(const Eigen::MatrixXd& input, const Eigen::MatrixXd& target, LossBase* lossfunc);
+        STDType calculateLoss(const MatrixXType& input, const MatrixXType& target, LossBase* lossfunc);
 
-        void backPropagation(const Eigen::MatrixXd& target);
+        void backPropagation(const MatrixXType& forwardOutput, const MatrixXType& target);
 
         void log();
 
-        std::vector<Layer> layers_;
+        std::vector<LayerBase*> layers_;
 
-        OptimizerBase* optimizer_;
+        OptimizerBase* optimizer_{};
 
-        LossBase* lossfunc_;
+        LossBase* lossfunc_{};
     }; // Seqiential
-    
+
 } // Astral
