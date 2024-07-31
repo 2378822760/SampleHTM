@@ -1,5 +1,5 @@
 #include "Astral.hpp"
-
+#define DEBUG
 namespace Astral {
     Softmax softmax;
     ReLU relu;
@@ -144,7 +144,7 @@ namespace Astral {
         this->z_ = x * this->w_;
         if (this->bias_) {
             RowVectorXType b = this->b_;
-            this->z_ = this->z_.rowwise() + b; // Eigen¹ã²¥»úÖÆ
+            this->z_ = this->z_.rowwise() + b; // Eigenï¿½ã²¥ï¿½ï¿½ï¿½ï¿½
         }
         // std::cout << layer.z_ << std::endl;
         this->y_ = this->activation_->f(this->z_, 0);
