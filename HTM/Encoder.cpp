@@ -10,7 +10,7 @@ ScalarEncoder::ScalarEncoder(int w, double minValue, double maxValue, int bucket
 }
 
 ScalarEncoder::ScalarEncoder(const map<string, string>& config) {
-    // 检查配置项是否完整
+    // 妫�鏌ラ厤缃」鏄惁瀹屾暣
     if (config.find("w") == config.end() || config.find("minValue") == config.end() ||
         config.find("maxValue") == config.end() || config.find("bucketNum") == config.end() ||
         config.find("clipInput") == config.end()) {
@@ -48,7 +48,7 @@ void ScalarEncoder::init(int w, double minValue, double maxValue, int bucketNum,
     maxValue_ = maxValue;
     bucketNum_ = bucketNum;
     clipInput_ = clipInput;
-    n_ = bucketNum + w - 1; // 计算输出宽度
+    n_ = bucketNum + w - 1; // 璁＄畻杈撳嚭瀹藉害
     lastBucketIdx_ = 0;
 }
 
